@@ -15,6 +15,7 @@ import {
   ShoppingBag,
   Sparkles,
   Trash2,
+  Truck,
   X,
 } from 'lucide-react'
 import ProductCard from './components/ProductCard'
@@ -55,6 +56,7 @@ function App() {
   const [basket, setBasket] = useState<Basket>(readSavedBasket)
   const [locationModalOpen, setLocationModalOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [selectedShopLocation, setSelectedShopLocation] = useState<string>()
 
   useEffect(() => {
     trackPageView()
@@ -151,17 +153,13 @@ function App() {
     const previousQuantity = basket[lineId]?.quantity ?? 0
     const unitPrice = getProductPrice(product, variation)
     if (quantity > previousQuantity) {
-      trackEvent('add_to_cart', {
-        currency: 'INR',
-        ...(unitPrice === null ? {} : { value: unitPrice }),
-        items: [{
-          item_id: product.id,
-          item_name: product.name,
-          item_category: product.category,
-          quantity: 1,
-          ...(unitPrice === null ? {} : { price: unitPrice }),
-          ...(variation ? { item_variant: variation } : {}),
-        }],
+      trackEvent('add_to_basket', {
+        item_name: product.name,
+        item_category: product.category,
+        ...(unitPrice === null ? {} : { item_price: unitPrice }),
+        quantity: quantity - previousQuantity,
+        item_type: 'product',
+        ...(selectedShopLocation ? { shop_location: selectedShopLocation } : {}),
       })
     }
 
@@ -180,10 +178,13 @@ function App() {
     const lineId = `combo:${combo.id}`
     const previousQuantity = basket[lineId]?.quantity ?? 0
     if (quantity > previousQuantity) {
-      trackEvent('add_to_cart', {
-        currency: 'INR',
-        value: combo.price,
-        items: [{ item_id: combo.id, item_name: combo.name, item_category: 'Combo Offers', quantity: 1, price: combo.price }],
+      trackEvent('add_to_basket', {
+        item_name: combo.name,
+        item_category: 'Combo Offers',
+        item_price: combo.price,
+        quantity: quantity - previousQuantity,
+        item_type: 'combo',
+        ...(selectedShopLocation ? { shop_location: selectedShopLocation } : {}),
       })
     }
 
@@ -368,6 +369,13 @@ function App() {
             <div className="hero-kicker"><span /> {store.season} <span /></div>
             <h1>May your Diwali<br />shine <em>brighter.</em></h1>
             <p className="hero-wish">Wishing you a season filled with light, laughter<br className="desktop-break" /> and the warmth of being together.</p>
+            <aside className="hero-delivery-badge" aria-label="Home delivery availability">
+              <span className="delivery-icon-wrap"><Truck size={20} aria-hidden="true" /></span>
+              <span className="hero-delivery-copy">
+                <strong>HOME DELIVERY AVAILABLE</strong>
+                <span>Enjoy shopping from the comfort of your home. Contact our stores to check delivery availability in your area.</span>
+              </span>
+            </aside>
             <div className="hero-meta">
               <div><span className="meta-label">A FESTIVE OFFER</span><strong>{store.offer}</strong></div>
               <div className="meta-divider" />
@@ -480,6 +488,7 @@ function App() {
           )}
           <div className="catalogue-result-bar" id="catalogue-results">
             <span>{filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}</span>
+            <span className="catalogue-delivery-note"><Truck size={14} aria-hidden="true" /> Home delivery available — check with a store</span>
             <span className="catalogue-sample-note">Prices are negotiable – enquire with a store for the best deal.</span>
           </div>
           {filteredProducts.length ? (
@@ -557,6 +566,14 @@ function App() {
           <div className="footer-shops-heading">
             <span className="eyebrow">VISIT US</span>
             <h2 id="footer-shops-title">Our shops</h2>
+            <div className="footer-delivery-service">
+              <Truck size={18} aria-hidden="true" />
+              <div>
+                <span className="footer-service-label">STORE SERVICES</span>
+                <strong>Home Delivery Available</strong>
+                <span>Contact a store to confirm availability in your area.</span>
+              </div>
+            </div>
           </div>
           <div className="footer-shop-list">
             {shopLocations.map((shop) => (
@@ -567,7 +584,11 @@ function App() {
                 {shop.phone && (
                   <p>
                     <Phone size={14} aria-hidden="true" />
-                    <a href={`tel:+${shop.phone.replace(/\D/g, '')}`} onClick={() => trackEvent('phone_click', { shop_location: shop.id })}>{formatPhone(shop.phone)}</a>
+                    <a href={`tel:+${shop.phone.replace(/\D/g, '')}`} onClick={() => trackEvent('click_call', {
+                      shop_location: shop.name,
+                      button_location: 'footer',
+                      phone_number: `+${shop.phone.replace(/\D/g, '')}`,
+                    })}>{formatPhone(shop.phone)}</a>
                   </p>
                 )}
                 <a className="directions-link" href={getShopDirectionsUrl(shop)} target="_blank" rel="noopener noreferrer">
@@ -599,6 +620,7 @@ function App() {
           locations={shopLocations}
           products={products}
           basket={basket}
+          onSelectLocation={setSelectedShopLocation}
           onClose={() => setLocationModalOpen(false)}
         />
       )}

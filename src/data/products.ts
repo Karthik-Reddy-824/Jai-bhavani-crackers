@@ -50,7 +50,7 @@ const soldPrices: Record<string, number> = {
   'mu-7-pencil': 54,
   'cr-f-snake': 15,
   'win-10-pencil': 105,
-  'pop-pop': 20400,
+  'pop-pop': 15,
   'mu-elec-diamond': 54,
   'selfie-stick-5pie': 405,
   'varun-photoflash': 180,

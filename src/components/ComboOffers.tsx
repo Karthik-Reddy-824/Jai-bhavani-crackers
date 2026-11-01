@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowRight, PackageCheck } from 'lucide-react'
+import { ArrowDown, ArrowRight, PackageCheck, Truck } from 'lucide-react'
 import type { ComboOffer } from '../types'
 
 interface ComboOffersProps {
@@ -28,6 +28,7 @@ export default function ComboOffers({ offers, onAdd }: ComboOffersProps) {
                 <div className="combo-card-topline">
                   <span><PackageCheck size={14} /> {offer.contents.length} product entries</span>
                   <span>Fixed-price pack</span>
+                  <span className="combo-delivery-label"><Truck size={13} aria-hidden="true" /> Home delivery available</span>
                 </div>
                 <h3>{offer.name}</h3>
                 <p className="combo-price">₹{offer.price.toLocaleString('en-IN')}</p>

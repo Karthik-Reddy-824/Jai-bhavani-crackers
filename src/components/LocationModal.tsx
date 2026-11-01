@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowUpRight, MapPin, MessageCircle, Navigation, Phone, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, MapPin, MessageCircle, Navigation, Phone, Truck, X } from 'lucide-react'
 import { comboOffers } from '../data/comboOffers'
 import { formatPhone, getProductPrice, getShopDirectionsUrl } from '../types'
 import type { Basket, BasketItem, ComboBasketItem, ComboOffer, Product, ShopLocation } from '../types'
@@ -9,6 +9,7 @@ interface LocationModalProps {
   locations: ShopLocation[]
   products: Product[]
   basket: Basket
+  onSelectLocation: (shopLocation: string) => void
   onClose: () => void
 }
 
@@ -68,6 +69,7 @@ export default function LocationModal({
   locations,
   products,
   basket,
+  onSelectLocation,
   onClose,
 }: LocationModalProps) {
   const [selectedLocation, setSelectedLocation] = useState<ShopLocation | null>(null)
@@ -95,16 +97,26 @@ export default function LocationModal({
 
   function chooseLocation(location: ShopLocation) {
     setSelectedLocation(location)
-    trackEvent('select_location', { shop_location: location.id })
+    onSelectLocation(location.name)
+    trackEvent('select_shop_location', { shop_location: location.name })
   }
 
   function openWhatsApp() {
     if (!selectedLocation?.whatsapp) return
-    trackEvent('whatsapp_click', { shop_location: selectedLocation.id })
     const message = buildMessage(selectedLines, total, hasUnpricedItems)
     const phone = selectedLocation.whatsapp.replace(/\D/g, '')
+    const linkUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    const hasProducts = selectedLines.some((line) => line.kind === 'product')
+    const hasCombos = selectedLines.some((line) => line.kind === 'combo')
+    const enquiryType = hasProducts && !hasCombos ? 'product' : hasCombos && !hasProducts ? 'combo' : 'general'
+    trackEvent('click_whatsapp', {
+      shop_location: selectedLocation.name,
+      button_location: 'shop card',
+      link_url: linkUrl,
+      enquiry_type: enquiryType,
+    })
     window.open(
-      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+      linkUrl,
       '_blank',
       'noopener,noreferrer',
     )
@@ -112,8 +124,13 @@ export default function LocationModal({
 
   function callShop() {
     if (!selectedLocation?.phone) return
-    trackEvent('phone_click', { shop_location: selectedLocation.id })
-    window.location.href = `tel:+${selectedLocation.phone.replace(/\D/g, '')}`
+    const phoneNumber = `+${selectedLocation.phone.replace(/\D/g, '')}`
+    trackEvent('click_call', {
+      shop_location: selectedLocation.name,
+      button_location: 'shop card',
+      phone_number: phoneNumber,
+    })
+    window.location.href = `tel:${phoneNumber}`
   }
 
   return (
@@ -181,6 +198,10 @@ export default function LocationModal({
             </p>
             <p className="negotiable-enquiry-note">
               Have a price in mind? Contact us – we&apos;re happy to discuss the best possible deal.
+            </p>
+            <p className="delivery-enquiry-note">
+              <Truck size={16} aria-hidden="true" />
+              <span>Interested in home delivery? Contact this store to check availability in your area.</span>
             </p>
             <div className="contact-actions">
               {selectedLocation.phone ? (
